@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+*.local
+.env
+
+# Claude Code cache directory
+.claude/
+
+# Serena cache directory
+.serena/
