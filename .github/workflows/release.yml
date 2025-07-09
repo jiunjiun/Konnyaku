@@ -1,0 +1,38 @@
+name: Build Konnyaku
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  ZIP_NAME: chrome-extension-${{ github.ref_name }}.zip
+
+jobs:
+  generate_release_files:
+    name: Generate Release File
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install Dependencies
+      run: bun install --frozen-lockfile
+
+    - name: Build Chrome Extension App
+      run: bun run build
+
+    - name: Zip the folder
+      uses: montudor/action-zip@v1
+      with:
+        args: zip -qq -r ${{ env.ZIP_NAME }} dist
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ${{ env.ZIP_NAME }}
