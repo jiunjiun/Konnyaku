@@ -25,12 +25,15 @@
 
 .konnyaku-floating-button-shadow-css button {
   all: initial;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: #2563eb;
+  padding: 0;
+  margin: 0;
+  background-color: #2563eb;
   color: white;
   border: none;
   border-radius: 50%;
@@ -38,10 +41,11 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  pointer-events: auto;
 }
 
 .konnyaku-floating-button-shadow-css button:hover {
-  background: #1d4ed8;
+  background-color: #1d4ed8;
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -50,7 +54,7 @@
   transform: scale(0.95);
 }
 
-.konnyaku-floating-button-shadow-css svg {
+.konnyaku-floating-button-shadow-css button svg {
   width: 20px;
   height: 20px;
   stroke: currentColor;
@@ -58,6 +62,7 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  pointer-events: none;
 }
 
 /* Shadow DOM CSS for Translation Popup */
@@ -68,10 +73,17 @@
   pointer-events: auto;
 }
 
+.konnyaku-translation-popup-shadow-css * {
+  box-sizing: border-box;
+}
+
 .konnyaku-translation-popup-shadow-css .popup {
+  all: initial;
+  box-sizing: border-box;
+  display: block;
   min-width: 280px;
   max-width: 320px;
-  background: white;
+  background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
   border: 1px solid #e5e7eb;
@@ -79,6 +91,7 @@
   font-size: 14px;
   line-height: 1.5;
   color: #374151;
+  overflow: hidden;
 }
 
 .konnyaku-translation-popup-shadow-css .header {
@@ -98,22 +111,27 @@
 }
 
 .konnyaku-translation-popup-shadow-css .header .flex img {
+  display: block;
   width: 28px;
   height: 28px;
   border-radius: 4px;
+  object-fit: contain;
 }
 
 .konnyaku-translation-popup-shadow-css .language-selector {
   all: initial;
+  box-sizing: border-box;
+  display: inline-block;
   padding: 6px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: white;
+  background-color: white;
   font-size: 13px;
-  font-family: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #374151;
   cursor: pointer;
   outline: none;
+  min-width: 100px;
 }
 
 .konnyaku-translation-popup-shadow-css .language-selector:focus {
@@ -123,12 +141,15 @@
 
 .konnyaku-translation-popup-shadow-css .settings-btn {
   all: initial;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: transparent;
+  padding: 0;
+  margin: 0;
+  background-color: transparent;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -137,8 +158,16 @@
 }
 
 .konnyaku-translation-popup-shadow-css .settings-btn:hover {
-  background: #e5e7eb;
+  background-color: #e5e7eb;
   color: #374151;
+}
+
+.konnyaku-translation-popup-shadow-css .settings-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  pointer-events: none;
 }
 
 .konnyaku-translation-popup-shadow-css .translation-content {
@@ -156,6 +185,7 @@
 }
 
 .konnyaku-translation-popup-shadow-css .loading svg {
+  display: inline-block;
   width: 20px;
   height: 20px;
   animation: spin 1s linear infinite;

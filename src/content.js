@@ -1,4 +1,3 @@
-
 import { getContentI18n } from './i18n/content-i18n.js'
 
 let floatingButtonContainer = null
@@ -12,7 +11,7 @@ async function loadCSS() {
   if (cssText) return cssText
 
   try {
-    const response = await fetch(chrome.runtime.getURL('content.css'))
+    const response = await fetch(chrome.runtime.getURL('src/content.css'))
     cssText = await response.text()
     return cssText
   } catch (error) {
@@ -27,8 +26,28 @@ function extractShadowCSS(cssText, selector) {
   const result = []
   let inTargetSection = false
   let braceCount = 0
+  let inKeyframes = false
 
   for (let line of lines) {
+    // 檢查是否進入 @keyframes
+    if (line.includes('@keyframes')) {
+      inKeyframes = true
+      result.push(line)
+      continue
+    }
+
+    // 處理 @keyframes 內容
+    if (inKeyframes) {
+      result.push(line)
+      braceCount += (line.match(/{/g) || []).length
+      braceCount -= (line.match(/}/g) || []).length
+      if (braceCount === 0 && line.includes('}')) {
+        inKeyframes = false
+      }
+      continue
+    }
+
+    // 檢查是否是目標選擇器
     if (line.includes(selector)) {
       inTargetSection = true
     }
@@ -40,7 +59,14 @@ function extractShadowCSS(cssText, selector) {
 
       // 替换选择器
       let processedLine = line
-        .replace(new RegExp(selector.replace(/\./g, '\\.'), 'g'), ':host')
+
+      // 處理主選擇器
+      if (line.includes(selector)) {
+        processedLine = processedLine.replace(new RegExp(selector.replace(/\./g, '\\.'), 'g'), ':host')
+      }
+
+      // 清理選擇器前綴
+      processedLine = processedLine
         .replace(/\.konnyaku-floating-button-shadow-css\s+/g, '')
         .replace(/\.konnyaku-translation-popup-shadow-css\s+/g, '')
 
@@ -56,7 +82,7 @@ function extractShadowCSS(cssText, selector) {
   return result.join('\n')
 }
 
-function createFloatingButton() {
+async function createFloatingButton() {
   // 創建容器元素
   const container = document.createElement('div')
   container.id = 'konnyaku-floating-container'
@@ -68,11 +94,10 @@ function createFloatingButton() {
   // 添加 CSS 樣式
   const style = document.createElement('style')
 
-  // 加載外部 CSS
-  loadCSS().then(css => {
-    const shadowCSS = extractShadowCSS(css, '.konnyaku-floating-button-shadow-css')
-    style.textContent = shadowCSS
-  })
+  // 先加載 CSS
+  const css = await loadCSS()
+  const shadowCSS = extractShadowCSS(css, '.konnyaku-floating-button-shadow-css')
+  style.textContent = shadowCSS
 
   // 創建按鈕
   const button = document.createElement('button')
@@ -98,7 +123,7 @@ function createFloatingButton() {
   return container
 }
 
-function createTranslationPopup() {
+async function createTranslationPopup() {
   // 創建容器元素
   const container = document.createElement('div')
   container.id = 'konnyaku-translation-container'
@@ -110,11 +135,10 @@ function createTranslationPopup() {
   // 添加 CSS 樣式
   const style = document.createElement('style')
 
-  // 加載外部 CSS
-  loadCSS().then(css => {
-    const shadowCSS = extractShadowCSS(css, '.konnyaku-translation-popup-shadow-css')
-    style.textContent = shadowCSS
-  })
+  // 先加載 CSS
+  const css = await loadCSS()
+  const shadowCSS = extractShadowCSS(css, '.konnyaku-translation-popup-shadow-css')
+  style.textContent = shadowCSS
 
   // 創建彈出窗口內容
   const popup = document.createElement('div')
@@ -130,9 +154,9 @@ function createTranslationPopup() {
   return container
 }
 
-function showFloatingButton() {
+async function showFloatingButton() {
   if (!floatingButtonContainer) {
-    floatingButtonContainer = createFloatingButton()
+    floatingButtonContainer = await createFloatingButton()
     document.body.appendChild(floatingButtonContainer)
   }
 
@@ -166,7 +190,7 @@ async function translateSelectedText() {
   }
 
   if (!translationPopupContainer) {
-    translationPopupContainer = createTranslationPopup()
+    translationPopupContainer = await createTranslationPopup()
     document.body.appendChild(translationPopupContainer)
   }
 
@@ -198,13 +222,12 @@ async function translateSelectedText() {
   ]
 
   // 過濾語言選項基於用戶偏好，如果沒有設置偏好則顯示所有語言
-  const filteredLanguages = preferredLanguages.length > 0
-    ? allLanguages.filter(lang => preferredLanguages.includes(lang.code))
-    : allLanguages
+  const filteredLanguages =
+    preferredLanguages.length > 0 ? allLanguages.filter((lang) => preferredLanguages.includes(lang.code)) : allLanguages
 
   // 生成語言選項
   const languageOptions = filteredLanguages
-    .map(lang => `<option value="${lang.code}" ${currentLang === lang.code ? 'selected' : ''}>${lang.name}</option>`)
+    .map((lang) => `<option value="${lang.code}" ${currentLang === lang.code ? 'selected' : ''}>${lang.name}</option>`)
     .join('')
 
   // 獲取彈出窗口元素
@@ -261,10 +284,9 @@ async function translateSelectedText() {
   if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
       // 發送消息給 background script 來開啟選項頁面
-      chrome.runtime.sendMessage({ action: 'openOptionsPage' })
-        .catch(error => {
-          console.error('Error opening options page:', error)
-        })
+      chrome.runtime.sendMessage({ action: 'openOptionsPage' }).catch((error) => {
+        console.error('Error opening options page:', error)
+      })
     })
   }
 
@@ -285,7 +307,6 @@ async function performTranslation(text, contentElement) {
       action: 'translate',
       text: text
     })
-
 
     if (response.error) {
       contentElement.innerHTML = `
@@ -349,4 +370,3 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return true
 })
-
