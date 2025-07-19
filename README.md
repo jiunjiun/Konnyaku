@@ -9,6 +9,7 @@
   [![Vue.js](https://img.shields.io/badge/Vue.js-3-4FC08D?logo=vue.js&logoColor=white)](https://vuejs.org/)
   [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
   [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 </div>
 
 功能強大的 Chrome 瀏覽器擴充功能，使用 Google Gemini API 提供即時文字翻譯。在任何網頁上選取文字，即可透過精美的浮動介面獲得即時翻譯，並完整支援國際化功能。
@@ -245,7 +246,7 @@ src/
 
 ## 📄 授權條款
 
-此專案僅供教育和個人使用。
+本專案採用 MIT 授權條款 - 詳見 [LICENSE](LICENSE) 檔案
 
 ---
 
