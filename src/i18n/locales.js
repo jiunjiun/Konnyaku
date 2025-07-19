@@ -1,11 +1,37 @@
 /**
  * 多語言資源定義模組
  * 包含所有支援語言的翻譯文字
+ * 
+ * 使用範例：
+ * ```javascript
+ * import { locales, getLocale } from './locales.js'
+ * 
+ * // 取得英文翻譯
+ * const enTranslations = getLocale('en')
+ * console.log(enTranslations.settings.title) // 'Konnyaku Settings'
+ * 
+ * // 取得特定語言的特定翻譯
+ * const zhTwSettings = locales['zh-TW'].settings
+ * console.log(zhTwSettings.saveButton) // '儲存設定'
+ * ```
  */
+
+import { LANGUAGE_NAMES_EN, SUPPORTED_UI_LANGUAGES, detectUserLanguage } from './language-constants.js'
 
 /**
  * 語言資源物件
  * @constant {Object.<string, Object>}
+ * 
+ * 結構說明：
+ * - settings: 設定頁面相關的翻譯文字
+ *   - title: 頁面標題
+ *   - apiKey: API 金鑰相關設定
+ *   - targetLanguage: 目標語言設定
+ *   - preferredLanguages: 偏好語言設定
+ *   - saveButton: 儲存按鈕文字
+ *   - saveSuccess/saveError: 儲存狀態訊息
+ *   - uiLanguage: 介面語言設定
+ * - languages: 各語言的本地化名稱
  */
 export const locales = {
   en: {
@@ -32,6 +58,7 @@ export const locales = {
         label: 'Interface Language'
       }
     },
+    // 英文介面使用組合的語言名稱（包含原文）
     languages: {
       'zh-TW': 'Traditional Chinese (繁體中文)',
       'zh-CN': 'Simplified Chinese (简体中文)',
@@ -221,38 +248,56 @@ export const locales = {
 }
 
 /**
- * 支援的語言代碼列表
+ * 支援的介面語言代碼列表
  * @constant {string[]}
+ * @deprecated 請使用 SUPPORTED_UI_LOCALES from language-constants.js
  */
-export const supportedLocales = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko']
+export const supportedLocales = SUPPORTED_UI_LANGUAGES
 
-/**
- * 檢測使用者的語言設定
- * @returns {string} 檢測到的語言代碼
- */
-export function detectUserLocale() {
-  const browserLang = navigator.language || navigator.userLanguage
-  const lang = browserLang.toLowerCase()
-
-  if (lang.startsWith('zh')) {
-    // 判斷是否為繁體中文地區
-    if (lang.includes('tw') || lang.includes('hk') || lang.includes('mo')) {
-      return 'zh-TW'
-    }
-    return 'zh-CN'
-  }
-
-  if (lang.startsWith('ja')) return 'ja'
-  if (lang.startsWith('ko')) return 'ko'
-
-  return 'en'
-}
+// 重新匯出 detectUserLocale 函數以保持向後相容
+// 重新匯出以保持向後相容
+export { detectUserLanguage as detectUserLocale }
 
 /**
  * 取得指定語言的資源物件
  * @param {string} locale - 語言代碼
  * @returns {Object} 語言資源物件
+ * @example
+ * const zhTwLocale = getLocale('zh-TW')
+ * console.log(zhTwLocale.settings.title) // 'Konnyaku 設定'
+ * 
+ * // 當語言不存在時，返回英文
+ * const unknownLocale = getLocale('unknown')
+ * console.log(unknownLocale.settings.title) // 'Konnyaku Settings'
  */
 export function getLocale(locale) {
   return locales[locale] || locales.en
 }
+
+/**
+ * 使用指南：
+ * 
+ * 1. 在 Vue 組件中使用（透過 useI18n composable）:
+ * ```vue
+ * <script setup>
+ * import { useI18n } from '@/i18n/useI18n'
+ * const { t } = useI18n()
+ * </script>
+ * <template>
+ *   <h1>{{ t('settings.title') }}</h1>
+ * </template>
+ * ```
+ * 
+ * 2. 在一般 JavaScript 中使用:
+ * ```javascript
+ * import { getLocale } from '@/i18n/locales'
+ * const locale = getLocale('zh-TW')
+ * console.log(locale.settings.saveButton) // '儲存設定'
+ * ```
+ * 
+ * 3. 取得支援的語言列表:
+ * ```javascript
+ * import { SUPPORTED_UI_LOCALES } from '@/constants/language-constants'
+ * console.log(SUPPORTED_UI_LOCALES) // ['en', 'zh-TW', 'zh-CN', 'ja', 'ko']
+ * ```
+ */

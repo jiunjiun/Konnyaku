@@ -1,10 +1,22 @@
 /**
- * Content Script 專用的簡化版國際化模組
- * 提供多語言支援功能
+ * Content Script 專用的國際化模組
+ * 提供多語言支援功能，使用統一的翻譯系統
+ * 
+ * 為什麼需要獨立的 content-i18n？
+ * 1. Content Script 在隔離的環境中執行，無法直接使用 Vue 的響應式系統
+ * 2. 需要更輕量的實作，避免載入不必要的依賴
+ * 3. Chrome 擴充功能的架構限制
+ * 
+ * @module i18n/content-i18n
  */
+
+import { createTranslator } from './translator.js'
+import { LANGUAGE_TRANSLATIONS, detectUserLanguage } from './language-constants.js'
 
 /**
  * Content Script 的語言資源定義
+ * 只包含 content script 需要的翻譯文字
+ * 
  * @constant {Object.<string, Object>}
  */
 const contentLocales = {
@@ -14,24 +26,7 @@ const contentLocales = {
     failedToTranslate: 'Failed to translate text',
     playAudio: 'Play audio',
     audioGenerationFailed: 'Failed to generate audio',
-    audioPlaybackFailed: 'Failed to play audio',
-    languages: {
-      'zh-TW': 'Traditional Chinese',
-      'zh-CN': 'Simplified Chinese',
-      'ja': 'Japanese',
-      'ko': 'Korean',
-      'en': 'English',
-      'es': 'Spanish',
-      'fr': 'French',
-      'de': 'German',
-      'it': 'Italian',
-      'pt': 'Portuguese',
-      'ru': 'Russian',
-      'ar': 'Arabic',
-      'hi': 'Hindi',
-      'th': 'Thai',
-      'vi': 'Vietnamese'
-    }
+    audioPlaybackFailed: 'Failed to play audio'
   },
   'zh-TW': {
     translating: '翻譯中...',
@@ -39,24 +34,7 @@ const contentLocales = {
     failedToTranslate: '翻譯失敗',
     playAudio: '播放音訊',
     audioGenerationFailed: '音訊生成失敗',
-    audioPlaybackFailed: '音訊播放失敗',
-    languages: {
-      'zh-TW': '繁體中文',
-      'zh-CN': '簡體中文',
-      'ja': '日文',
-      'ko': '韓文',
-      'en': '英文',
-      'es': '西班牙文',
-      'fr': '法文',
-      'de': '德文',
-      'it': '義大利文',
-      'pt': '葡萄牙文',
-      'ru': '俄文',
-      'ar': '阿拉伯文',
-      'hi': '印地文',
-      'th': '泰文',
-      'vi': '越南文'
-    }
+    audioPlaybackFailed: '音訊播放失敗'
   },
   'zh-CN': {
     translating: '翻译中...',
@@ -64,24 +42,7 @@ const contentLocales = {
     failedToTranslate: '翻译失败',
     playAudio: '播放音频',
     audioGenerationFailed: '音频生成失败',
-    audioPlaybackFailed: '音频播放失败',
-    languages: {
-      'zh-TW': '繁体中文',
-      'zh-CN': '简体中文',
-      'ja': '日文',
-      'ko': '韩文',
-      'en': '英文',
-      'es': '西班牙文',
-      'fr': '法文',
-      'de': '德文',
-      'it': '意大利文',
-      'pt': '葡萄牙文',
-      'ru': '俄文',
-      'ar': '阿拉伯文',
-      'hi': '印地文',
-      'th': '泰文',
-      'vi': '越南文'
-    }
+    audioPlaybackFailed: '音频播放失败'
   },
   ja: {
     translating: '翻訳中...',
@@ -89,24 +50,7 @@ const contentLocales = {
     failedToTranslate: '翻訳に失敗しました',
     playAudio: '音声を再生',
     audioGenerationFailed: '音声生成に失敗しました',
-    audioPlaybackFailed: '音声再生に失敗しました',
-    languages: {
-      'zh-TW': '繁体字中国語',
-      'zh-CN': '簡体字中国語',
-      'ja': '日本語',
-      'ko': '韓国語',
-      'en': '英語',
-      'es': 'スペイン語',
-      'fr': 'フランス語',
-      'de': 'ドイツ語',
-      'it': 'イタリア語',
-      'pt': 'ポルトガル語',
-      'ru': 'ロシア語',
-      'ar': 'アラビア語',
-      'hi': 'ヒンディー語',
-      'th': 'タイ語',
-      'vi': 'ベトナム語'
-    }
+    audioPlaybackFailed: '音声再生に失敗しました'
   },
   ko: {
     translating: '번역 중...',
@@ -114,58 +58,105 @@ const contentLocales = {
     failedToTranslate: '번역 실패',
     playAudio: '오디오 재생',
     audioGenerationFailed: '오디오 생성 실패',
-    audioPlaybackFailed: '오디오 재생 실패',
-    languages: {
-      'zh-TW': '번체 중국어',
-      'zh-CN': '간체 중국어',
-      'ja': '일본어',
-      'ko': '한국어',
-      'en': '영어',
-      'es': '스페인어',
-      'fr': '프랑스어',
-      'de': '독일어',
-      'it': '이탈리아어',
-      'pt': '포르투갈어',
-      'ru': '러시아어',
-      'ar': '아랍어',
-      'hi': '힌디어',
-      'th': '태국어',
-      'vi': '베트남어'
+    audioPlaybackFailed: '오디오 재생 실패'
+  }
+}
+
+/**
+ * 將語言名稱翻譯合併到 content locales 中
+ * 動態添加 languages 屬性，避免重複定義
+ * 
+ * @private
+ */
+function mergeLanguageTranslations() {
+  const supportedUiLanguages = Object.keys(contentLocales)
+  
+  supportedUiLanguages.forEach(uiLang => {
+    // 如果 LANGUAGE_TRANSLATIONS 中有對應的翻譯，就使用它
+    // 否則使用英文版本作為後備
+    const translations = LANGUAGE_TRANSLATIONS[uiLang] || LANGUAGE_TRANSLATIONS.en
+    contentLocales[uiLang].languages = translations
+  })
+}
+
+// 初始化時合併語言翻譯
+mergeLanguageTranslations()
+
+/**
+ * 取得 Content Script 的國際化實例
+ * 
+ * @returns {Promise<Object>} 國際化物件
+ * @returns {Function} .t - 翻譯函數，接受鍵值並返回對應的翻譯文字
+ * @returns {string} .locale - 當前的語言代碼
+ * 
+ * @example
+ * // 取得 i18n 實例
+ * const i18n = await getContentI18n()
+ * 
+ * // 使用翻譯函數
+ * i18n.t('translating') // '翻譯中...' (如果語言是繁體中文)
+ * i18n.t('languages.ja') // '日文'
+ * i18n.t('missing.key') // 'missing.key' (找不到時返回鍵值)
+ */
+export async function getContentI18n() {
+  try {
+    // 從 Chrome storage 取得語言設定
+    const storage = await chrome.storage.local.get(['uiLanguage'])
+    
+    // 檢測使用者語言
+    const detectedLocale = detectUserLanguage(
+      navigator.language,
+      storage.uiLanguage
+    )
+    
+    // 創建翻譯函數
+    const translator = createTranslator(contentLocales, detectedLocale)
+    
+    return {
+      t: translator,
+      locale: detectedLocale
+    }
+  } catch (error) {
+    console.error('載入 content i18n 失敗：', error)
+    
+    // 錯誤時返回預設的英文版本
+    const fallbackTranslator = createTranslator(contentLocales, 'en')
+    return {
+      t: fallbackTranslator,
+      locale: 'en'
     }
   }
 }
 
 /**
- * 取得 Content Script 的國際化實例
- * @returns {Promise<Object>} 國際化物件，包含 t 函數和當前語言
- * @returns {Function} .t - 翻譯函數，接受鍵值並返回對應的翻譯文字
- * @returns {string} .locale - 當前的語言代碼
+ * Content Script i18n 實例的快取
+ * 可以避免每次都重新創建
+ * 
+ * @type {Object|null}
+ * @private
  */
-export async function getContentI18n() {
-  try {
-    const storage = await chrome.storage.local.get(['uiLanguage'])
-    const locale = storage.uiLanguage || navigator.language.substring(0, 2)
-    const translations = contentLocales[locale] || contentLocales.en
-    
-    return {
-      t: (key) => {
-        const keys = key.split('.')
-        let value = translations
-        for (const k of keys) {
-          value = value?.[k]
-          if (value === undefined) {
-            return contentLocales.en[key] || key
-          }
-        }
-        return value
-      },
-      locale
-    }
-  } catch (error) {
-    console.error('載入 i18n 失敗：', error)
-    return {
-      t: (key) => contentLocales.en[key] || key,
-      locale: 'en'
-    }
+let cachedI18n = null
+
+/**
+ * 取得快取的 i18n 實例
+ * 第一次呼叫時會創建，之後會返回快取的實例
+ * 
+ * @returns {Promise<Object>} i18n 實例
+ * @example
+ * const i18n = await getCachedContentI18n()
+ * console.log(i18n.t('translating'))
+ */
+export async function getCachedContentI18n() {
+  if (!cachedI18n) {
+    cachedI18n = await getContentI18n()
   }
+  return cachedI18n
+}
+
+/**
+ * 清除快取的 i18n 實例
+ * 當語言設定變更時應該呼叫此函數
+ */
+export function clearContentI18nCache() {
+  cachedI18n = null
 }
