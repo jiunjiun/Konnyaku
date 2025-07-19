@@ -4,7 +4,7 @@ This document serves as the authoritative development guide for the Konnyaku Tra
 
 ## Project Overview
 
-Konnyaku Translator is a Chrome extension that provides instant text translation using Google's Gemini API. The extension features an intuitive floating button interface that appears when users select text on any webpage, with full internationalization support and modern Vue.js architecture.
+Konnyaku Translator is a Chrome extension that provides instant text translation using Google's Gemini API. The extension features an intuitive floating button interface that appears when users select text on any webpage, with full internationalization support, modern Vue.js architecture, and a highly modular codebase designed for maintainability and extensibility.
 
 ## Core Development Principles
 
@@ -18,7 +18,13 @@ Konnyaku Translator is a Chrome extension that provides instant text translation
 - **Parse, don't validate**: Transform raw data into domain objects with guaranteed properties
 - **Fail fast**: Surface errors immediately rather than propagating invalid states
 
-### 3. Chrome Extension Best Practices
+### 3. Modular Architecture
+- **Single responsibility modules**: Each module handles one specific aspect of functionality
+- **Clear interfaces**: Well-defined exports and imports between modules
+- **Dependency injection**: Pass dependencies explicitly rather than using global state
+- **Testability**: Modules should be independently testable
+
+### 4. Chrome Extension Best Practices
 - **Minimal permissions**: Only request permissions that are absolutely necessary
 - **Secure communication**: Always validate message sources and sanitize data
 - **Performance first**: Optimize for minimal memory usage and fast startup
@@ -50,34 +56,27 @@ Konnyaku Translator is a Chrome extension that provides instant text translation
 
 ### Code Organization Standards
 
-#### Background Scripts (`/background`)
-- **Single responsibility**: Handle API calls and message routing
+#### Background Scripts (`src/background/`)
+- **Modular services**: Split into focused modules (config-manager, gemini-api, message-handler)
+- **Single responsibility**: Each module handles one aspect of background functionality
 - **Stateless operations**: Services should not maintain internal state
 - **Error transformation**: Convert API errors to user-friendly messages
-- **Example structure**:
-  ```javascript
-  async function translateText(text, targetLanguage) {
-    try {
-      // Validate inputs
-      // Call Gemini API
-      // Transform response
-      return { success: true, translation: result }
-    } catch (error) {
-      // Log for debugging
-      // Return user-friendly error
-      return { success: false, error: userMessage }
-    }
-  }
-  ```
+- **Module structure**:
+  - `config-manager.js`: Manages all configuration and settings
+  - `gemini-api.js`: Handles Gemini API communication and translation
+  - `message-handler.js`: Routes messages between content and background scripts
 
-#### Content Scripts (`/content`)
-- **Separation of concerns**: Each module has a specific responsibility
+#### Content Scripts (`src/content/`)
+- **Modular architecture**: Split into focused modules for better maintainability
 - **Security first**: Always validate origins and message sources
 - **Graceful degradation**: Handle errors without breaking the page
-- **Modular architecture**:
-  - UI components handle rendering
-  - Event handlers manage user interactions
-  - Message handlers coordinate with background script
+- **Module structure**:
+  - `index.js`: Entry point that initializes the content script
+  - `ui-manager.js`: Manages UI state and coordinates components
+  - `ui-components.js`: Creates and manages UI elements (button, popup)
+  - `event-handlers.js`: Handles all DOM events and user interactions
+  - `translation-service.js`: Manages translation requests and language settings
+  - `css-loader.js`: Loads and processes CSS for Shadow DOM
 
 #### Components (`/components`)
 - **Props validation**: Always define prop types and requirements
@@ -129,20 +128,57 @@ Follow conventional commits strictly:
 
 ## Architecture
 
+### Benefits of Modular Architecture
+
+The modular approach provides several key advantages:
+
+- **Maintainability**: Each module has a clear, single responsibility making it easier to understand and modify
+- **Testability**: Modules can be tested independently with mock dependencies
+- **Reusability**: Common functionality can be shared across different parts of the extension
+- **Code Organization**: Related functionality is grouped together, making the codebase easier to navigate
+- **Debugging**: Issues can be isolated to specific modules, simplifying troubleshooting
+- **Team Collaboration**: Different developers can work on different modules with minimal conflicts
+- **Scalability**: New features can be added as new modules without affecting existing code
+
+### Modular Architecture Overview
+
+The codebase is organized into highly modular components, each with specific responsibilities:
+
+```
+├── src/background/          # Background script modules
+│   ├── config-manager.js    # Configuration and settings management
+│   ├── gemini-api.js        # Gemini API integration
+│   └── message-handler.js   # Message routing and handling
+├── src/content/             # Content script modules
+│   ├── index.js             # Entry point and initialization
+│   ├── ui-manager.js        # UI state management
+│   ├── ui-components.js     # UI element creation
+│   ├── event-handlers.js    # Event handling logic
+│   ├── translation-service.js # Translation coordination
+│   └── css-loader.js        # Shadow DOM CSS handling
+├── src/constants/           # Shared constants
+│   └── index.js             # Centralized constant definitions
+└── src/i18n/                # Internationalization
+    ├── language-constants.js # Language-related constants
+    ├── content-i18n.js      # Content script i18n
+    ├── locales.js           # Translation strings
+    └── useI18n.js           # Vue i18n composable
+```
+
 ### Core Components
 
-1. **Content Script** (`src/content.js`)
-   - Handles text selection detection and mouse position tracking
-   - Creates floating translation button with smart positioning
-   - Manages translation popup with language selector
-   - Implements Shadow DOM for style isolation
-   - Includes i18n support for content script UI elements
+1. **Content Script Modules** (`src/content/`)
+   - **index.js**: Initializes UI manager and event listeners
+   - **ui-manager.js**: Manages floating button and popup state
+   - **ui-components.js**: Creates Shadow DOM components
+   - **event-handlers.js**: Handles mouse events and text selection
+   - **translation-service.js**: Coordinates with background script
+   - **css-loader.js**: Manages CSS for Shadow DOM isolation
 
-2. **Background Script** (`src/background.js`)
-   - Manages Google Gemini API communications
-   - Handles translation requests and responses using Gemini 2.5 Flash Lite Preview
-   - Opens options page when requested
-   - Implements error handling and API response processing
+2. **Background Script Modules** (`src/background/`)
+   - **config-manager.js**: Handles all settings and storage operations
+   - **gemini-api.js**: Manages Gemini API calls and responses
+   - **message-handler.js**: Routes messages between components
 
 3. **Options Page** (`options.html`, `src/options.js`, `src/components/OptionsApp.vue`)
    - Vue.js-based settings interface
@@ -155,14 +191,28 @@ Follow conventional commits strictly:
    - Minimal popup that redirects to options page
    - Quick access to settings from browser toolbar
 
+5. **Constants Module** (`src/constants/index.js`)
+   - Centralized constant definitions
+   - API endpoints and model names
+   - DOM element IDs and classes
+   - Message action types
+   - Storage key names
+   - Re-exports language constants from i18n module
+
 ### Internationalization System
 
-1. **Content Script i18n** (`src/i18n/content-i18n.js`)
+1. **Language Constants** (`src/i18n/language-constants.js`)
+   - Comprehensive language support utilities
+   - Language name mappings in multiple languages
+   - Helper functions for language detection and display
+   - Supports 15 translation languages and 5 UI languages
+
+2. **Content Script i18n** (`src/i18n/content-i18n.js`)
    - Standalone i18n system for content script
    - Supports 5 UI languages (en, zh-TW, zh-CN, ja, ko)
    - Browser language auto-detection
 
-2. **Vue Component i18n** (`src/i18n/useI18n.js`)
+3. **Vue Component i18n** (`src/i18n/useI18n.js`)
    - Composable for Vue components
    - Shared locale definitions (`src/i18n/locales.js`)
    - Persistent language preference
@@ -180,12 +230,13 @@ Follow conventional commits strictly:
 ## Technical Stack
 
 - **Framework**: Vue.js 3 with Composition API
-- **Build Tool**: Vite 6.0
+- **Build Tool**: Vite 6.0 with @crxjs/vite-plugin
 - **Styling**: Tailwind CSS v4.0
 - **Icon System**: Lucide icons
 - **API**: Google Gemini 2.5 Flash Lite Preview
-- **Manifest**: Chrome Extension Manifest V3
-- **i18n**: Custom internationalization system
+- **Manifest**: Chrome Extension Manifest V3 (dynamic generation)
+- **i18n**: Custom internationalization system with language utilities
+- **Package Manager**: Bun (recommended) or npm
 
 ## Architecture Guidelines
 
@@ -299,20 +350,35 @@ npm run preview
 
 ### Build Configuration
 
-The project uses Vite with custom configuration:
-- Multiple entry points for different extension parts
-- Vue.js plugin for component processing
-- Tailwind CSS for styling
-- Custom plugin for copying manifest.json and content.css
-- Optimized chunk splitting
+The project uses Vite with @crxjs/vite-plugin for seamless Chrome extension development:
+- **@crxjs/vite-plugin**: Handles manifest generation and Chrome extension specifics
+- **Dynamic manifest**: Generated from `manifest.config.mjs` using package.json values
+- **Multiple entry points**: Automatically configured for extension parts
+- **Vue.js plugin**: For component processing with hot module replacement
+- **Tailwind CSS v4**: Integrated with @tailwindcss/vite
+- **Path aliases**: Configured in `config/vite/resolve_alias.js` for cleaner imports
+- **Optimized output**: Extension-friendly bundle structure
 
 ### File Structure
 
 ```
 src/
 ├── assets/              # Static assets
-├── background.js        # Service worker for API calls
-├── content.js           # Content script for webpage interaction
+├── background.js        # Background script entry point
+├── background/          # Background script modules
+│   ├── config-manager.js    # Configuration management
+│   ├── gemini-api.js        # Gemini API integration
+│   └── message-handler.js   # Message routing
+├── content.js           # Content script entry point
+├── content/             # Content script modules
+│   ├── index.js             # Module initialization
+│   ├── ui-manager.js        # UI state management
+│   ├── ui-components.js     # UI element creation
+│   ├── event-handlers.js    # Event handling
+│   ├── translation-service.js # Translation coordination
+│   └── css-loader.js        # CSS management
+├── constants/           # Shared constants
+│   └── index.js             # Centralized constants
 ├── content.css          # Styles for injected UI elements
 ├── popup.js             # Popup initialization
 ├── options.js           # Settings page initialization
@@ -321,18 +387,28 @@ src/
 │   ├── PopupApp.vue     # Popup component
 │   └── OptionsApp.vue   # Settings component
 └── i18n/
+    ├── language-constants.js # Language utilities
     ├── content-i18n.js  # i18n for content script
     ├── locales.js       # Translation strings
     └── useI18n.js       # i18n composable for Vue
+
+config/
+└── vite/
+    └── resolve_alias.js # Path aliases for imports
+
+manifest.config.mjs      # Dynamic manifest generation
+vite.config.mjs          # Vite configuration
+package.json             # Dependencies and scripts
 
 public/
 └── icon.png             # Extension icon
 
 dist/                    # Built extension files
-├── manifest.json        # Extension manifest
-├── content.js           # Compiled content script
-├── content.css          # Content styles
-├── background.js        # Compiled background script
+├── manifest.json        # Generated extension manifest
+├── src/
+│   ├── content.js       # Compiled content script
+│   ├── content.css      # Content styles
+│   └── background.js    # Compiled background script
 ├── popup.html           # Popup interface
 ├── options.html         # Settings page
 ├── icon.png             # Extension icon
@@ -345,10 +421,11 @@ dist/                    # Built extension files
 
 The extension uses the Gemini 2.5 Flash Lite Preview model:
 
-- **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-preview:generateContent`
-- **Authentication**: API key-based
+- **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent`
+- **Authentication**: API key-based with format validation
 - **Features**: Auto-detection of source language, customizable target language
 - **Model**: Optimized for fast, lightweight translations
+- **Error Handling**: User-friendly error messages in multiple languages
 
 ### Translation Logic
 
@@ -417,10 +494,12 @@ Uses Chrome's storage API:
 
 - **Permissions**: Minimal permissions (activeTab, storage, contextMenus)
 - **CSP Compliance**: Follows Content Security Policy
-- **API Key Storage**: Stored in Chrome's local storage
+- **API Key Storage**: Stored in Chrome's local storage with format validation
 - **No External Dependencies**: All resources bundled
 - **Shadow DOM**: Prevents CSS injection attacks
 - **Input Sanitization**: Text content properly escaped
+- **Message Validation**: All Chrome runtime messages validated
+- **Error Messages**: User-friendly error messages in multiple languages
 
 ## Testing Checklist
 
@@ -480,29 +559,44 @@ The `.github/workflows/release.yml` workflow:
 
 ### Essential Commands
 ```bash
+# Using Bun (recommended)
+bun install        # Install dependencies
+bun run dev       # Start dev server with hot reload
+bun run build     # Build for production
+bun run preview   # Preview production build
+
+# Using npm
 npm install        # Install dependencies
 npm run dev       # Start dev server with hot reload
 npm run build     # Build for production
 npm run preview   # Preview production build
-npm run lint      # Run linter (if configured)
-npm run typecheck # Run type checking (if configured)
-npm test          # Run tests (if configured)
+
+# Future commands (when configured)
+bun run lint      # Run linter
+bun run typecheck # Run type checking
+bun test          # Run tests
 ```
 
 ### Key Files
-- `manifest.json` - Extension configuration
-- `vite.config.js` - Build configuration
+- `manifest.config.mjs` - Dynamic manifest configuration
+- `vite.config.mjs` - Build configuration with @crxjs/vite-plugin
 - `CLAUDE.md` - This development guide
 - `package.json` - Dependencies and scripts
+- `src/constants/index.js` - Central constant definitions
+- `src/i18n/language-constants.js` - Language support utilities
 
 ### Common Tasks
 
 #### Adding a New Translation Language
-1. Add language code to `LANGUAGES` in constants
-2. Update locale files in `/src/i18n/locales.js`
-3. Test translation quality with Gemini API
-4. Update documentation
-5. Verify with `npm run build`
+1. Add language code and names to `src/i18n/language-constants.js`:
+   - Update `LANGUAGE_NAMES_EN` with English name
+   - Update `LANGUAGE_NATIVE_NAMES` with native name
+   - Update `LANGUAGE_TRANSLATIONS` for each UI language
+2. Update locale files in `src/i18n/locales.js`
+3. Update `src/content/translation-service.js` if needed
+4. Test translation quality with Gemini API
+5. Update documentation
+6. Verify with `bun run build`
 
 #### Debugging Issues
 1. Check Chrome DevTools console (both extension and page)
@@ -519,15 +613,18 @@ npm test          # Run tests (if configured)
 
 ## Important Reminders
 
-- **Always build before committing**: `npm run build`
+- **Always build before committing**: `bun run build`
+- **Follow modular architecture patterns**
+- **Keep modules focused and single-purpose**
 - **Follow Vue 3 Composition API patterns**
 - **Maintain Shadow DOM isolation**
 - **Validate all external data**
-- **Handle API errors gracefully**
-- **Keep content scripts lightweight**
-- **Document complex logic**
+- **Handle API errors gracefully with localized messages**
+- **Keep content scripts lightweight and modular**
+- **Document complex logic and module interfaces**
 - **Test on multiple websites**
 - **Verify i18n for all languages**
 - **Check memory usage regularly**
+- **Use constants from `src/constants/` for consistency**
 
 Remember: This extension handles user-selected text and API keys. Security, performance, and user experience are our top priorities.
