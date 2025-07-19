@@ -1,3 +1,12 @@
+/**
+ * 多語言資源定義模組
+ * 包含所有支援語言的翻譯文字
+ */
+
+/**
+ * 語言資源物件
+ * @constant {Object.<string, Object>}
+ */
 export const locales = {
   en: {
     settings: {
@@ -211,13 +220,22 @@ export const locales = {
   }
 }
 
+/**
+ * 支援的語言代碼列表
+ * @constant {string[]}
+ */
 export const supportedLocales = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko']
 
+/**
+ * 檢測使用者的語言設定
+ * @returns {string} 檢測到的語言代碼
+ */
 export function detectUserLocale() {
   const browserLang = navigator.language || navigator.userLanguage
   const lang = browserLang.toLowerCase()
 
   if (lang.startsWith('zh')) {
+    // 判斷是否為繁體中文地區
     if (lang.includes('tw') || lang.includes('hk') || lang.includes('mo')) {
       return 'zh-TW'
     }
@@ -230,6 +248,11 @@ export function detectUserLocale() {
   return 'en'
 }
 
+/**
+ * 取得指定語言的資源物件
+ * @param {string} locale - 語言代碼
+ * @returns {Object} 語言資源物件
+ */
 export function getLocale(locale) {
   return locales[locale] || locales.en
 }

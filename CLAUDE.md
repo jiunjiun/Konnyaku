@@ -1,8 +1,131 @@
 # Konnyaku Translator - Technical Documentation
 
+This document serves as the authoritative development guide for the Konnyaku Translator Chrome Extension project. It defines our development principles, methodologies, and standards to ensure consistent, high-quality code.
+
 ## Project Overview
 
 Konnyaku Translator is a Chrome extension that provides instant text translation using Google's Gemini API. The extension features an intuitive floating button interface that appears when users select text on any webpage, with full internationalization support and modern Vue.js architecture.
+
+## Core Development Principles
+
+### 1. Component-First Development
+- **Small, focused components**: Each Vue component should have a single, clear responsibility
+- **Composition over inheritance**: Use Vue Composition API and composables for code reuse
+- **Declarative over imperative**: Leverage Vue's reactivity system instead of manual DOM manipulation
+
+### 2. Type Safety and Data Validation
+- **Validate at boundaries**: All data from external sources (Gemini API, Chrome APIs) must be validated
+- **Parse, don't validate**: Transform raw data into domain objects with guaranteed properties
+- **Fail fast**: Surface errors immediately rather than propagating invalid states
+
+### 3. Chrome Extension Best Practices
+- **Minimal permissions**: Only request permissions that are absolutely necessary
+- **Secure communication**: Always validate message sources and sanitize data
+- **Performance first**: Optimize for minimal memory usage and fast startup
+
+## Development Methodology
+
+### Feature Development Workflow
+
+1. **Understand the requirement**
+   - Review the user story or feature request
+   - Identify affected components and services
+   - Plan the data flow from source to UI
+
+2. **Design the data structure**
+   - Define TypeScript interfaces (even in .js files as JSDoc)
+   - Create sample data for testing
+   - Document the expected data format
+
+3. **Implement incrementally**
+   - Start with the data layer (background script)
+   - Build the UI components
+   - Connect them with proper messaging
+   - Add error handling last
+
+4. **Verify at each step**
+   ```bash
+   npm run build  # Always verify builds after changes
+   ```
+
+### Code Organization Standards
+
+#### Background Scripts (`/background`)
+- **Single responsibility**: Handle API calls and message routing
+- **Stateless operations**: Services should not maintain internal state
+- **Error transformation**: Convert API errors to user-friendly messages
+- **Example structure**:
+  ```javascript
+  async function translateText(text, targetLanguage) {
+    try {
+      // Validate inputs
+      // Call Gemini API
+      // Transform response
+      return { success: true, translation: result }
+    } catch (error) {
+      // Log for debugging
+      // Return user-friendly error
+      return { success: false, error: userMessage }
+    }
+  }
+  ```
+
+#### Content Scripts (`/content`)
+- **Separation of concerns**: Each module has a specific responsibility
+- **Security first**: Always validate origins and message sources
+- **Graceful degradation**: Handle errors without breaking the page
+- **Modular architecture**:
+  - UI components handle rendering
+  - Event handlers manage user interactions
+  - Message handlers coordinate with background script
+
+#### Components (`/components`)
+- **Props validation**: Always define prop types and requirements
+- **Emit documentation**: Document all emitted events with their payloads
+- **Composition pattern**:
+  ```vue
+  <script setup>
+  // 1. Imports
+  // 2. Props/Emits definitions  
+  // 3. Reactive state
+  // 4. Computed properties
+  // 5. Methods
+  // 6. Lifecycle hooks
+  // 7. Watchers
+  </script>
+  ```
+
+### Commit Discipline
+
+Follow conventional commits strictly:
+- `feat`: New feature implementation
+- `fix`: Bug fixes
+- `refactor`: Code restructuring without behavior change
+- `docs`: Documentation updates
+- `style`: Code formatting
+- `test`: Test additions or modifications
+- `chore`: Build process or tool changes
+- `release`: Version releases and tags
+
+### Code Quality Standards
+
+#### Style Rules
+- 2-space indentation
+- Single quotes for strings
+- No trailing commas in objects
+- Line width: 120 characters
+- Consistent naming conventions
+
+#### Vue-Specific Rules
+- Use `<script setup>` syntax for all components
+- Prefer `v-show` over `v-if` for frequently toggled elements
+- Use scoped styles to prevent conflicts
+
+#### Chrome Extension Rules
+- Always check for `chrome` API availability before use
+- Handle extension context invalidation gracefully
+- Use Chrome Storage API for all persistence (never localStorage)
+- Validate all message sources in content scripts
 
 ## Architecture
 
@@ -63,6 +186,98 @@ Konnyaku Translator is a Chrome extension that provides instant text translation
 - **API**: Google Gemini 2.5 Flash Lite Preview
 - **Manifest**: Chrome Extension Manifest V3
 - **i18n**: Custom internationalization system
+
+## Architecture Guidelines
+
+### Data Flow Architecture
+
+```
+User Selection → Content Script → Background Script → Gemini API
+                      ↓                    ↓              ↓
+              Floating Button      Message Router    Translation
+                      ↓                    ↓              ↓
+            Translation Popup ← Chrome Runtime ← API Response
+```
+
+### State Management Strategy
+- **Local state first**: Use component state for UI-specific data
+- **Message passing**: Communicate between content and background scripts
+- **Persistent state**: Use Chrome Storage for user preferences and API keys
+
+### Error Handling Strategy
+
+1. **Background script**: Catch and log API errors, return user-friendly messages
+2. **Content script**: Display errors in UI, provide retry mechanisms
+3. **Global handler**: Catch unhandled errors and log to console (development only)
+
+## Security Guidelines
+
+### API Key Management
+- Never store API keys in code
+- Use Chrome Storage API with proper encryption
+- Validate API key format before use
+- Clear keys on extension uninstall
+
+### Data Handling
+- Sanitize all text before translation
+- Never execute dynamic code from API responses
+- Validate message origins in content scripts
+- Use Content Security Policy in manifest
+
+### Content Script Security
+- Always validate message origins
+- Use structured message types
+- Never trust data from the page
+- Sanitize DOM content before use
+
+### Permission Management
+- Document why each permission is needed
+- Request minimal permissions
+- Provide graceful degradation if permissions are denied
+
+## Testing Strategy
+
+### Manual Testing Checklist
+- [ ] Extension loads without errors
+- [ ] Text selection triggers floating button
+- [ ] Translation popup appears correctly
+- [ ] Language switching works properly
+- [ ] API errors display user-friendly messages
+- [ ] Settings persist across sessions
+- [ ] UI language changes take effect
+- [ ] All 15 translation languages work
+- [ ] Shadow DOM prevents style conflicts
+
+### Build Verification
+Always run before committing:
+```bash
+npm run build
+```
+
+### Content Script Testing
+1. Test on various websites (news, blogs, social media)
+2. Verify button positioning near edges
+3. Test with different text lengths and special characters
+4. Check that page functionality isn't broken
+
+## Performance Guidelines
+
+### Startup Performance
+- Lazy load translation popup
+- Minimize initial bundle size
+- Use dynamic imports for i18n resources
+
+### Runtime Performance  
+- Debounce text selection events
+- Cache recent translations appropriately
+- Clean up event listeners on removal
+- Optimize Shadow DOM usage
+
+### Memory Management
+- Clear translation cache periodically
+- Remove event listeners when not needed
+- Monitor Chrome DevTools memory profiler
+- Clean up content script resources on page unload
 
 ## Development
 
@@ -244,109 +459,75 @@ Uses Chrome's storage API:
 - Test with different encodings
 - Check performance on heavy pages
 
-## Common Commands
+## Release Workflow
 
+### Version Management
+1. Update version in `package.json` and `manifest.json`
+2. Update CHANGELOG.md with release notes
+3. Commit with message: `chore: release vX.X.X`
+4. Create and push tag: `git tag vX.X.X && git push origin vX.X.X`
+5. GitHub Actions will automatically build and create release
+
+### GitHub Actions
+The `.github/workflows/release.yml` workflow:
+- Triggers on version tags (`v*`)
+- Builds the extension
+- Creates a zip file
+- Publishes as GitHub release
+- Uploads to Chrome Web Store (if configured)
+
+## Quick Reference
+
+### Essential Commands
 ```bash
-# Lint (if configured)
-npm run lint
-
-# Type check (if configured)
-npm run typecheck
-
-# Test (if configured)
-npm test
-
-# Build for production
-npm run build
-
-# Development server
-npm run dev
+npm install        # Install dependencies
+npm run dev       # Start dev server with hot reload
+npm run build     # Build for production
+npm run preview   # Preview production build
+npm run lint      # Run linter (if configured)
+npm run typecheck # Run type checking (if configured)
+npm test          # Run tests (if configured)
 ```
 
-## Troubleshooting
+### Key Files
+- `manifest.json` - Extension configuration
+- `vite.config.js` - Build configuration  
+- `CLAUDE.md` - This development guide
+- `package.json` - Dependencies and scripts
 
-1. **Extension Not Loading**: 
-   - Check manifest.json is in dist folder
-   - Verify all required files are built
-   - Check Chrome console for errors
+### Common Tasks
 
-2. **API Errors**: 
-   - Verify API key is valid
-   - Check network connectivity
-   - Monitor API quota limits
+#### Adding a New Translation Language
+1. Add language code to `LANGUAGES` in constants
+2. Update locale files in `/src/i18n/locales.js`
+3. Test translation quality with Gemini API
+4. Update documentation
+5. Verify with `npm run build`
 
-3. **Button Not Appearing**: 
-   - Check if site blocks content scripts
-   - Verify text is actually selected
-   - Check console for JavaScript errors
+#### Debugging Issues
+1. Check Chrome DevTools console (both extension and page)
+2. Verify API requests in Network tab
+3. Inspect Chrome Storage in Application tab
+4. Review background script logs
+5. Check Shadow DOM in Elements tab
 
-4. **Translation Failures**: 
-   - Ensure API key has proper permissions
-   - Check for rate limiting
-   - Verify internet connection
+#### Updating Dependencies
+1. Update version in package.json
+2. Run `npm install`
+3. Test all features thoroughly
+4. Update CLAUDE.md if APIs changed
 
-5. **Style Conflicts**: 
-   - Shadow DOM should prevent most issues
-   - Check for !important overrides
-   - Verify CSS injection
+## Important Reminders
 
-## Future Enhancements
+- **Always build before committing**: `npm run build`
+- **Follow Vue 3 Composition API patterns**
+- **Maintain Shadow DOM isolation**
+- **Validate all external data**
+- **Handle API errors gracefully**
+- **Keep content scripts lightweight**
+- **Document complex logic**
+- **Test on multiple websites**
+- **Verify i18n for all languages**
+- **Check memory usage regularly**
 
-- **Context Menu Integration**: Right-click translation option
-- **Keyboard Shortcuts**: Customizable hotkeys
-- **Translation History**: Recent translations storage
-- **Offline Mode**: Cache frequent translations
-- **Text-to-Speech**: Audio pronunciation
-- **Full Page Translation**: Translate entire pages
-- **Custom Dictionaries**: User-defined translations
-- **Translation Confidence**: Show AI confidence scores
-
-## Contributing Guidelines
-
-When contributing to Konnyaku Translator:
-
-1. **Code Style**:
-   - Follow existing Vue.js patterns
-   - Use Composition API for new components
-   - Maintain consistent indentation
-
-2. **Testing**:
-   - Test on multiple websites
-   - Verify all languages work
-   - Check memory usage
-
-3. **Documentation**:
-   - Update relevant documentation
-   - Add comments for complex logic
-   - Update README if adding features
-
-4. **Commits**:
-   - Use clear, descriptive messages
-   - Reference issues when applicable
-   - Keep commits focused
-
-5. **Compatibility**:
-   - Maintain Chrome 88+ support
-   - Don't break existing features
-   - Consider performance impact
-
-## Architecture Decisions
-
-1. **Shadow DOM**: Chosen for complete style isolation
-2. **Vue.js 3**: Modern framework with small bundle size
-3. **Vite**: Fast development and optimized builds
-4. **Gemini API**: Best balance of quality and speed
-5. **Manifest V3**: Future-proof and security focused
-6. **i18n System**: Custom implementation for flexibility
-
-## Performance Metrics
-
-- **Content Script Size**: ~11KB (minified)
-- **Total Extension Size**: ~75KB
-- **Load Time**: <50ms on most pages
-- **Translation Speed**: 500-1500ms (API dependent)
-- **Memory Usage**: <10MB active
-
-## License
-
-This project is for educational and personal use.
+Remember: This extension handles user-selected text and API keys. Security, performance, and user experience are our top priorities.

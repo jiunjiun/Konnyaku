@@ -1,9 +1,20 @@
-// Simplified i18n for content script
+/**
+ * Content Script 專用的簡化版國際化模組
+ * 提供多語言支援功能
+ */
+
+/**
+ * Content Script 的語言資源定義
+ * @constant {Object.<string, Object>}
+ */
 const contentLocales = {
   en: {
     translating: 'Translating...',
     error: 'Error:',
     failedToTranslate: 'Failed to translate text',
+    playAudio: 'Play audio',
+    audioGenerationFailed: 'Failed to generate audio',
+    audioPlaybackFailed: 'Failed to play audio',
     languages: {
       'zh-TW': 'Traditional Chinese',
       'zh-CN': 'Simplified Chinese',
@@ -26,6 +37,9 @@ const contentLocales = {
     translating: '翻譯中...',
     error: '錯誤：',
     failedToTranslate: '翻譯失敗',
+    playAudio: '播放音訊',
+    audioGenerationFailed: '音訊生成失敗',
+    audioPlaybackFailed: '音訊播放失敗',
     languages: {
       'zh-TW': '繁體中文',
       'zh-CN': '簡體中文',
@@ -48,6 +62,9 @@ const contentLocales = {
     translating: '翻译中...',
     error: '错误：',
     failedToTranslate: '翻译失败',
+    playAudio: '播放音频',
+    audioGenerationFailed: '音频生成失败',
+    audioPlaybackFailed: '音频播放失败',
     languages: {
       'zh-TW': '繁体中文',
       'zh-CN': '简体中文',
@@ -70,6 +87,9 @@ const contentLocales = {
     translating: '翻訳中...',
     error: 'エラー：',
     failedToTranslate: '翻訳に失敗しました',
+    playAudio: '音声を再生',
+    audioGenerationFailed: '音声生成に失敗しました',
+    audioPlaybackFailed: '音声再生に失敗しました',
     languages: {
       'zh-TW': '繁体字中国語',
       'zh-CN': '簡体字中国語',
@@ -92,6 +112,9 @@ const contentLocales = {
     translating: '번역 중...',
     error: '오류:',
     failedToTranslate: '번역 실패',
+    playAudio: '오디오 재생',
+    audioGenerationFailed: '오디오 생성 실패',
+    audioPlaybackFailed: '오디오 재생 실패',
     languages: {
       'zh-TW': '번체 중국어',
       'zh-CN': '간체 중국어',
@@ -112,6 +135,12 @@ const contentLocales = {
   }
 }
 
+/**
+ * 取得 Content Script 的國際化實例
+ * @returns {Promise<Object>} 國際化物件，包含 t 函數和當前語言
+ * @returns {Function} .t - 翻譯函數，接受鍵值並返回對應的翻譯文字
+ * @returns {string} .locale - 當前的語言代碼
+ */
 export async function getContentI18n() {
   try {
     const storage = await chrome.storage.local.get(['uiLanguage'])
@@ -133,7 +162,7 @@ export async function getContentI18n() {
       locale
     }
   } catch (error) {
-    console.error('Failed to load i18n:', error)
+    console.error('載入 i18n 失敗：', error)
     return {
       t: (key) => contentLocales.en[key] || key,
       locale: 'en'
