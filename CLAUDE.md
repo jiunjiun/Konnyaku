@@ -45,7 +45,7 @@ Konnyaku Translator is a Chrome extension that provides instant text translation
 
 4. **Verify at each step**
    ```bash
-   npm run build  # Always verify builds after changes
+   bun run build  # Always verify builds after changes
    ```
 
 ### Code Organization Standards
@@ -86,7 +86,7 @@ Konnyaku Translator is a Chrome extension that provides instant text translation
   ```vue
   <script setup>
   // 1. Imports
-  // 2. Props/Emits definitions  
+  // 2. Props/Emits definitions
   // 3. Reactive state
   // 4. Computed properties
   // 5. Methods
@@ -267,7 +267,7 @@ npm run build
 - Minimize initial bundle size
 - Use dynamic imports for i18n resources
 
-### Runtime Performance  
+### Runtime Performance
 - Debounce text selection events
 - Cache recent translations appropriately
 - Clean up event listeners on removal
@@ -387,11 +387,11 @@ Uses Chrome's storage API:
 {
   // API Configuration
   apiKey: "user-gemini-api-key",
-  
+
   // Language Preferences
   targetLanguage: "zh-TW",              // Default target language
   preferredLanguages: ["zh-TW", "en"],  // Selected languages
-  
+
   // UI Settings
   uiLanguage: "en"                      // Interface language
 }
@@ -426,27 +426,27 @@ Uses Chrome's storage API:
 
 ### Functional Testing
 
-1. **Text Selection**: 
+1. **Text Selection**:
    - Select text on various websites
    - Test with different text lengths
    - Test special characters and emojis
 
-2. **Button Positioning**: 
+2. **Button Positioning**:
    - Verify button appears at mouse position
    - Test near page edges
    - Test with scrolling
 
-3. **Translation**: 
+3. **Translation**:
    - Test all 15 supported languages
    - Verify language switching
    - Test error handling
 
-4. **Settings**: 
+4. **Settings**:
    - Verify API key persistence
    - Test language preference saving
    - Test UI language switching
 
-5. **Edge Cases**: 
+5. **Edge Cases**:
    - Empty selection
    - Very long text
    - Network failures
@@ -491,7 +491,7 @@ npm test          # Run tests (if configured)
 
 ### Key Files
 - `manifest.json` - Extension configuration
-- `vite.config.js` - Build configuration  
+- `vite.config.js` - Build configuration
 - `CLAUDE.md` - This development guide
 - `package.json` - Dependencies and scripts
 

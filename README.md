@@ -19,8 +19,8 @@ A powerful Chrome extension for instant text translation using Google's Gemini A
 
 1. **Build the extension**
    ```bash
-   npm install
-   npm run build
+   bun install
+   bun run build
    ```
 
 2. **Load in Chrome**
@@ -59,13 +59,13 @@ A powerful Chrome extension for instant text translation using Google's Gemini A
 ### Build Commands
 ```bash
 # Development with hot reload
-npm run dev
+bun run dev
 
 # Production build
-npm run build
+bun run build
 
 # Preview build
-npm run preview
+bun run preview
 ```
 
 ### Project Structure
@@ -140,7 +140,7 @@ The extension requires minimal permissions:
 ### Common Issues
 
 **Extension not loading?**
-- Ensure you've run `npm run build` first
+- Ensure you've run `bun run build` first
 - Check that all files exist in the `dist` folder
 - Look for error messages in Chrome's extension page
 
