@@ -84,8 +84,8 @@
           {{ t('settings.saveButton') }}
         </button>
 
-        <div v-if="saveStatus" class="text-sm" :class="saveStatus === 'success' ? 'text-green-600' : 'text-red-600'">
-          {{ saveStatus === 'success' ? t('settings.saveSuccess') : t('settings.saveError') }}
+        <div v-if="statusMessage" class="text-sm" :class="saveStatus === 'success' ? 'text-green-600' : 'text-red-600'">
+          {{ statusMessage }}
         </div>
       </div>
     </div>
@@ -94,63 +94,177 @@
 </template>
 
 <script setup>
+/**
+ * Konnyaku 擴充功能設定頁面元件
+ * 
+ * 功能：
+ * - 管理 Gemini API 金鑰
+ * - 顯示目前的目標語言（只讀）
+ * - 選擇偏好語言列表
+ * - 切換介面語言
+ * 
+ * 註：目標語言只能在翻譯時即時更改，不能在設定頁面修改
+ */
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from '../i18n/useI18n.js'
+import { 
+  SUPPORTED_LANGUAGES, 
+  STORAGE_KEYS,
+  API 
+} from '../constants/index.js'
 
+// === 國際化設定 ===
 const { t, locale, setLocale } = useI18n()
 
+// === 設定資料 ===
 const apiKey = ref('')
-const targetLanguage = ref('zh-TW')
-const saveStatus = ref('')
+const targetLanguage = ref(API.DEFAULT_TARGET_LANGUAGE)
 const preferredLanguages = ref([])
 const currentLocale = ref('')
 
-const languageCodes = ['zh-TW', 'zh-CN', 'ja', 'ko', 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ar', 'hi', 'th', 'vi']
+// === UI 狀態 ===
+const saveStatus = ref('') // 'success' | 'error' | ''
+const isLoading = ref(false)
+const errorMessage = ref('')
 
-// 使用 computed 來自動更新語言名稱
+/**
+ * 可用語言列表
+ * 使用 computed 來自動更新語言名稱（當介面語言切換時）
+ */
 const availableLanguages = computed(() =>
-  languageCodes.map(code => ({
+  SUPPORTED_LANGUAGES.map(code => ({
     code,
     name: t(`languages.${code}`)
   }))
 )
 
-onMounted(async () => {
-  const storage = await chrome.storage.local.get(['apiKey', 'targetLanguage', 'preferredLanguages', 'uiLanguage'])
-  if (storage.apiKey) apiKey.value = storage.apiKey
-  if (storage.targetLanguage) targetLanguage.value = storage.targetLanguage
-  if (storage.preferredLanguages && storage.preferredLanguages.length > 0) {
-    preferredLanguages.value = storage.preferredLanguages
-  } else {
-    // Default to showing all languages if no preferences set
-    preferredLanguages.value = availableLanguages.map(lang => lang.code)
+/**
+ * 載入設定資料
+ * 從 Chrome storage 讀取使用者的設定
+ */
+async function loadSettings() {
+  isLoading.value = true
+  try {
+    const storage = await chrome.storage.local.get([
+      STORAGE_KEYS.API_KEY,
+      STORAGE_KEYS.TARGET_LANGUAGE,
+      STORAGE_KEYS.PREFERRED_LANGUAGES,
+      STORAGE_KEYS.UI_LANGUAGE
+    ])
+    
+    // 載入 API 金鑰
+    if (storage[STORAGE_KEYS.API_KEY]) {
+      apiKey.value = storage[STORAGE_KEYS.API_KEY]
+    }
+    
+    // 載入目標語言
+    if (storage[STORAGE_KEYS.TARGET_LANGUAGE]) {
+      targetLanguage.value = storage[STORAGE_KEYS.TARGET_LANGUAGE]
+    }
+    
+    // 載入偏好語言
+    if (storage[STORAGE_KEYS.PREFERRED_LANGUAGES] && storage[STORAGE_KEYS.PREFERRED_LANGUAGES].length > 0) {
+      preferredLanguages.value = storage[STORAGE_KEYS.PREFERRED_LANGUAGES]
+    } else {
+      // 預設顯示所有語言
+      preferredLanguages.value = SUPPORTED_LANGUAGES
+    }
+    
+    // 載入介面語言
+    currentLocale.value = locale.value
+  } catch (error) {
+    console.error('載入設定失敗：', error)
+    errorMessage.value = '載入設定失敗，請重新整理頁面'
+  } finally {
+    isLoading.value = false
   }
-  currentLocale.value = locale.value
-})
-
-const handleLocaleChange = async () => {
-  await setLocale(currentLocale.value)
 }
 
+// 元件掛載時載入設定
+onMounted(loadSettings)
+
+/**
+ * 處理介面語言切換
+ * 更新 i18n 設定並儲存到 Chrome storage
+ */
+const handleLocaleChange = async () => {
+  try {
+    await setLocale(currentLocale.value)
+  } catch (error) {
+    console.error('切換語言失敗：', error)
+    // 如果失敗，恢復原本的值
+    currentLocale.value = locale.value
+  }
+}
+
+/**
+ * 儲存設定
+ * 將 API 金鑰和偏好語言儲存到 Chrome storage
+ */
 const saveSettings = async () => {
+  // 清除之前的狀態
+  saveStatus.value = ''
+  errorMessage.value = ''
+  
+  // 驗證輸入
+  if (!apiKey.value || apiKey.value.trim() === '') {
+    errorMessage.value = '請輸入 API 金鑰'
+    saveStatus.value = 'error'
+    return
+  }
+  
+  // 驗證至少選擇一個語言
+  if (preferredLanguages.value.length === 0) {
+    errorMessage.value = '請至少選擇一個偏好語言'
+    saveStatus.value = 'error'
+    return
+  }
+  
   // 確保 preferredLanguages 是一個普通陣列
   const preferredLanguagesArray = Array.isArray(preferredLanguages.value)
     ? [...preferredLanguages.value]
     : preferredLanguages.value
+    
   try {
     await chrome.storage.local.set({
-      apiKey: apiKey.value,
-      preferredLanguages: preferredLanguagesArray
+      [STORAGE_KEYS.API_KEY]: apiKey.value.trim(),
+      [STORAGE_KEYS.PREFERRED_LANGUAGES]: preferredLanguagesArray
     })
+    
     saveStatus.value = 'success'
+    // 3 秒後清除成功訊息
     setTimeout(() => {
-      saveStatus.value = ''
+      if (saveStatus.value === 'success') {
+        saveStatus.value = ''
+      }
     }, 3000)
   } catch (error) {
+    console.error('儲存設定失敗：', error)
+    errorMessage.value = error.message || '儲存設定失敗，請稍後再試'
     saveStatus.value = 'error'
+    
+    // 5 秒後清除錯誤訊息
     setTimeout(() => {
-      saveStatus.value = ''
-    }, 3000)
+      if (saveStatus.value === 'error') {
+        saveStatus.value = ''
+        errorMessage.value = ''
+      }
+    }, 5000)
   }
 }
+
+/**
+ * 顯示狀態訊息
+ * 根據儲存狀態顯示不同的訊息
+ */
+const statusMessage = computed(() => {
+  if (saveStatus.value === 'success') {
+    return t('settings.saveSuccess')
+  } else if (saveStatus.value === 'error' && errorMessage.value) {
+    return errorMessage.value
+  } else if (saveStatus.value === 'error') {
+    return t('settings.saveError')
+  }
+  return ''
+})
 </script>
