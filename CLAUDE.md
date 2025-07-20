@@ -401,7 +401,7 @@ vite.config.mjs          # Vite configuration
 package.json             # Dependencies and scripts
 
 public/
-└── icon.png             # Extension icon
+└── src/assets/images/logo.png # Extension icon
 
 dist/                    # Built extension files
 ├── manifest.json        # Generated extension manifest
@@ -411,7 +411,7 @@ dist/                    # Built extension files
 │   └── background.js    # Compiled background script
 ├── popup.html           # Popup interface
 ├── options.html         # Settings page
-├── icon.png             # Extension icon
+├── src/assets/images/logo.png # Extension icon
 └── assets/              # CSS and JS assets
 ```
 

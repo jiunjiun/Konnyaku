@@ -9,8 +9,8 @@ export default defineManifest({
   permissions: ['activeTab', 'storage', 'contextMenus'],
   host_permissions: ['https://generativelanguage.googleapis.com/*'],
   icons: {
-    48: 'icon.png',
-    128: 'icon.png'
+    48: 'src/assets/images/logo.png',
+    128: 'src/assets/images/logo.png'
   },
   background: {
     service_worker: 'src/background.js',
@@ -18,7 +18,7 @@ export default defineManifest({
   },
   action: {
     default_popup: 'popup.html',
-    default_icon: 'icon.png',
+    default_icon: 'src/assets/images/logo.png',
     default_title: 'Konnyaku'
   },
   options_page: 'options.html',
@@ -31,7 +31,7 @@ export default defineManifest({
   ],
   web_accessible_resources: [
     {
-      resources: ['src/content.css', 'icon.png'],
+      resources: ['src/content.css', 'src/assets/images/logo.png'],
       matches: ['<all_urls>']
     }
   ]

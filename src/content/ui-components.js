@@ -103,7 +103,7 @@ export function updatePopupHeader(popup, languages, currentLang) {
   const headerHTML = `
     <div class="header">
       <div class="flex">
-        <img src="${chrome.runtime.getURL('icon.png')}" alt="Konnyaku">
+        <img src="${chrome.runtime.getURL('src/assets/images/logo.png')}" alt="Konnyaku">
         <select class="language-selector" id="language-selector">
           ${languageOptions}
         </select>

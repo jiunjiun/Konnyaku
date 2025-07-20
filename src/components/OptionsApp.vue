@@ -4,7 +4,7 @@
     <header class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-2xl mx-auto px-8 py-6 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <img src="/icon.png" alt="Konnyaku Logo" class="size-12 rounded-xl">
+          <img src="/src/assets/images/logo.png" alt="Konnyaku Logo" class="size-12 rounded-xl">
           <h1 class="text-2xl font-bold text-gray-800">{{ t('settings.title') }}</h1>
         </div>
         <select
