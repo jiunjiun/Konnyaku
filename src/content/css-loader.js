@@ -34,11 +34,13 @@ export function extractShadowCSS(cssText, selector) {
   let inTargetSection = false
   let braceCount = 0
   let inKeyframes = false
+  let keyframesBraceCount = 0
 
   for (let line of lines) {
     // 檢查是否進入 @keyframes
     if (line.includes('@keyframes')) {
       inKeyframes = true
+      keyframesBraceCount = 0
       result.push(line)
       continue
     }
@@ -46,9 +48,9 @@ export function extractShadowCSS(cssText, selector) {
     // 處理 @keyframes 內容
     if (inKeyframes) {
       result.push(line)
-      braceCount += (line.match(/{/g) || []).length
-      braceCount -= (line.match(/}/g) || []).length
-      if (braceCount === 0 && line.includes('}')) {
+      keyframesBraceCount += (line.match(/{/g) || []).length
+      keyframesBraceCount -= (line.match(/}/g) || []).length
+      if (keyframesBraceCount === 0 && line.includes('}')) {
         inKeyframes = false
       }
       continue
@@ -57,6 +59,7 @@ export function extractShadowCSS(cssText, selector) {
     // 檢查是否是目標選擇器
     if (line.includes(selector)) {
       inTargetSection = true
+      braceCount = 0
     }
 
     if (inTargetSection) {
