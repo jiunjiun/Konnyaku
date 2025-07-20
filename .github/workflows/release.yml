@@ -27,9 +27,9 @@ jobs:
       run: bun run build
 
     - name: Zip the folder
-      uses: montudor/action-zip@v1
-      with:
-        args: zip -qq -r ${{ env.ZIP_NAME }} dist
+      run: |
+        cd dist
+        zip -qq -r ../${{ env.ZIP_NAME }} .
 
     - name: Release
       uses: softprops/action-gh-release@v2
