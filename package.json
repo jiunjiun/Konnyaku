@@ -1,6 +1,6 @@
 {
   "name": "Konnyaku",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Translate selected text using Gemini API",
   "type": "module",
   "scripts": {
